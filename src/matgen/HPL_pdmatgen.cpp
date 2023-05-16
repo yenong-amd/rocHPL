@@ -12,6 +12,7 @@
 #include <hip/hip_runtime_api.h>
 #include <cassert>
 #include <unistd.h>
+#include <iostream>
 
 const int max_nthreads = 128;
 
@@ -116,12 +117,26 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   mat->dW = nullptr;
   mat->W  = nullptr;
 
-  /* Create a rocBLAS handle */
-  rocblas_create_handle(&handle);
-  rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
-  rocblas_initialize();
-  rocblas_set_stream(handle, computeStream);
+  size_t amem, bhand, bpoint, binit, bstream;
+  size_t atotal, btotal;
 
+  /* Create a rocBLAS handle */
+  hipMemGetInfo(&bhand, &btotal);
+  rocblas_create_handle(&handle);
+  hipMemGetInfo(&bpoint, &btotal);
+  rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
+  hipMemGetInfo(&binit, &btotal);
+  rocblas_initialize();
+  hipMemGetInfo(&bstream, &btotal);
+  rocblas_set_stream(handle, computeStream);
+  hipMemGetInfo(&amem, &atotal);
+
+  std::cout << "rocblas_create_handle memory use " << bhand - bpoint
+            << std::endl;
+  std::cout << "rocblas_set_pointer_mode memory use " << bpoint - binit
+            << std::endl;
+  std::cout << "rocblas_initialize memory use " << binit - bstream << std::endl;
+  std::cout << "rocblas_set_stream memory use " << bstream - amem << std::endl;
   /*
    * Allocate dynamic memory
    */
